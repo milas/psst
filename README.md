@@ -1,6 +1,8 @@
 # psst 🤫
 Sometimes you need to take a little peek at your Kubernetes secrets...
 
+![short demo GIF of an interactive psst run](demo.gif)
+
 # Usage
 You can run `psst` without any arguments to interactively pick the secret and key whose value you want to see.
 

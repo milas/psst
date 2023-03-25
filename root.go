@@ -15,6 +15,7 @@ import (
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	k8scmd "k8s.io/kubectl/pkg/cmd/util"
 	utilcomp "k8s.io/kubectl/pkg/util/completion"
+	"sort"
 	"strings"
 )
 
@@ -87,6 +88,7 @@ func NewCommand(streams genericclioptions.IOStreams) (*cobra.Command, k8scmd.Fac
 						secretNames = append(secretNames, v)
 					}
 				}
+				sort.Strings(secretNames)
 				return secretNames, defaultFlags
 			}
 
@@ -107,6 +109,7 @@ func NewCommand(streams genericclioptions.IOStreams) (*cobra.Command, k8scmd.Fac
 					keyNames = append(keyNames, k)
 				}
 			}
+			sort.Strings(keyNames)
 			return keyNames, defaultFlags
 		},
 	}
@@ -223,6 +226,8 @@ func Run(
 		for i := range secrets.Items {
 			secretNames[i] = secrets.Items[i].GetName()
 		}
+		sort.Strings(secretNames)
+
 		opts.SecretName, err = prompt.New().
 			Ask("Choose secret:").
 			Choose(secretNames, promptOpts...)
@@ -249,6 +254,7 @@ func Run(
 		for k := range secret.Data {
 			keys = append(keys, k)
 		}
+		sort.Strings(keys)
 		if len(keys) == 1 {
 			opts.SecretKey = keys[0]
 
