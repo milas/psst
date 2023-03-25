@@ -1,0 +1,30 @@
+Shell Completions:
+
+  Bash:
+
+    $ source <(%[1]s --completion=bash)
+
+    # To load completions for each session, execute once:
+    # Linux:
+    $ %[1]s --completion=bash > /etc/bash_completion.d/%[1]s
+    # macOS:
+    $ %[1]s --completion=bash > $(brew --prefix)/etc/bash_completion.d/%[1]s
+
+  Zsh:
+    $ source <(%[1]s --completion=zsh); compdef _%[1]s %[1]s
+
+    # To load completions for each session, execute once:
+    $ %[1]s --completion=zsh > "${fpath[1]}/_%[1]s"
+
+  fish:
+
+    $ %[1]s --completion=fish | source
+
+    # To load completions for each session, execute once:
+    $ %[1]s --completion=fish > ~/.config/fish/completions/%[1]s.fish
+
+  PowerShell:
+
+    PS> %[1]s --completion=powershell | Out-String | Invoke-Expression
+
+---

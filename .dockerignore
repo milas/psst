@@ -1,0 +1,5 @@
+*
+
+!go.*
+!*.go
+!usage.txt
