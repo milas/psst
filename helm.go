@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
@@ -12,13 +14,13 @@ import (
 
 const SecretTypeHelm = "helm.sh/release.v1"
 
-func FormatHelmSecret(s *v1.Secret) (string, error) {
+func FormatHelmSecret(_ context.Context, s *v1.Secret) (string, error) {
 	if s.Type != SecretTypeHelm {
 		return "", fmt.Errorf("invalid secret type: %v", s.Type)
 	}
 	d, ok := s.Data["release"]
 	if !ok {
-		return "", fmt.Errorf("secret missing key: release")
+		return "", errors.New("secret missing key: release")
 	}
 	gzipData := make([]byte, base64.StdEncoding.DecodedLen(len(d)))
 	if n, err := base64.StdEncoding.Decode(gzipData, d); err != nil {

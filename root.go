@@ -216,6 +216,8 @@ func registerKubernetesAutocomplete(cmd *cobra.Command, kubeFactory k8scmd.Facto
 	)
 }
 
+type FormatFunc func(ctx context.Context, secret *corev1.Secret) (string, error)
+
 func Run(
 	ctx context.Context,
 	streams genericclioptions.IOStreams,
@@ -269,23 +271,6 @@ func Run(
 		}
 	}
 
-	if !opts.Raw {
-		switch secret.Type {
-		case SecretTypeHelm:
-			msg, err := FormatHelmSecret(secret)
-			if err != nil {
-				return err
-			}
-			if !strings.HasSuffix(msg, "\n") {
-				msg += "\n"
-			}
-			if _, err := io.Copy(streams.Out, strings.NewReader(msg)); err != nil {
-				return err
-			}
-			return nil
-		}
-	}
-
 	if len(secret.Data) == 0 {
 		if k8sterm.IsTerminal(streams.Out) {
 			msg := prompt.ThemeDefault("Choose key:", prompt.StateError, "secret has no data")
@@ -298,6 +283,16 @@ func Run(
 	}
 
 	if opts.SecretKey == "" {
+		if !opts.Raw {
+			ok, err := MaybeFormatSecret(ctx, streams, secret)
+			if err != nil {
+				return err
+			}
+			if ok {
+				return nil
+			}
+		}
+
 		var keys []string
 		for k := range secret.Data {
 			keys = append(keys, k)
@@ -357,4 +352,34 @@ func secretClient(kubeFactory k8scmd.Factory) (v1.SecretInterface, error) {
 
 	secretClient := kubeClient.CoreV1().Secrets(namespace)
 	return secretClient, nil
+}
+func MaybeFormatSecret(
+	ctx context.Context,
+	streams genericclioptions.IOStreams,
+	secret *corev1.Secret,
+) (bool, error) {
+	var formatFunc FormatFunc
+	switch secret.Type {
+	case SecretTypeTLS:
+		formatFunc = FormatSecretTLS
+	case SecretTypeHelm:
+		formatFunc = FormatHelmSecret
+	}
+
+	if formatFunc == nil {
+		return false, nil
+	}
+
+	msg, err := formatFunc(ctx, secret)
+	if err != nil {
+		return false, err
+	}
+
+	if !strings.HasSuffix(msg, "\n") {
+		msg += "\n"
+	}
+	if _, err := io.Copy(streams.Out, strings.NewReader(msg)); err != nil {
+		return false, err
+	}
+	return true, nil
 }

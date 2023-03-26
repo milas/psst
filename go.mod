@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/charmbracelet/bubbletea v0.23.2
 	github.com/cqroot/prompt v0.8.7
+	github.com/grantae/certinfo v0.0.0-20170412194111-59d56a35515b
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	k8s.io/api v0.26.3
