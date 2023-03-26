@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/cqroot/prompt"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/cqroot/prompt"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
 func main() {

@@ -1,14 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"fmt"
 	"io"
-	k8sterm "k8s.io/kubectl/pkg/util/term"
 	"os"
 	"sort"
 	"strings"
+
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	k8sterm "k8s.io/kubectl/pkg/util/term"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/cqroot/prompt"
@@ -36,6 +39,7 @@ type Options struct {
 
 func NewCommand(streams genericclioptions.IOStreams) (*cobra.Command, k8scmd.Factory) {
 	var kubeFactory k8scmd.Factory
+	var raw bool
 	var autocompleteShellLanguage string
 
 	cmd := &cobra.Command{
@@ -49,7 +53,7 @@ func NewCommand(streams genericclioptions.IOStreams) (*cobra.Command, k8scmd.Fac
 				return printCompletionScript(cmd, streams, autocompleteShellLanguage)
 			}
 
-			var opts Options
+			opts := Options{Raw: raw}
 			if len(args) != 0 {
 				opts.SecretName = args[0]
 			}
@@ -118,6 +122,11 @@ func NewCommand(streams genericclioptions.IOStreams) (*cobra.Command, k8scmd.Fac
 			return keyNames, defaultFlags
 		},
 	}
+
+	cmd.Flags().BoolVar(
+		&raw, "raw", false,
+		"Raw will prevent any decoding/auto-formatting of secret values",
+	)
 	cmd.Flags().StringVar(
 		&autocompleteShellLanguage,
 		"completion",
@@ -149,7 +158,6 @@ func NewCommand(streams genericclioptions.IOStreams) (*cobra.Command, k8scmd.Fac
 	cmd.SilenceErrors = true
 	cmd.CompletionOptions = cobra.CompletionOptions{
 		DisableDefaultCmd: true,
-		HiddenDefaultCmd:  false,
 	}
 
 	// initialize kubernetes factory (needs to install flags on the cobra
@@ -249,18 +257,44 @@ func Run(
 	} else {
 		var err error
 		secret, err = secretClient.Get(ctx, opts.SecretName, metav1.GetOptions{})
+		if k8serr.IsNotFound(err) && k8sterm.IsTerminal(streams.Out) {
+			msg := prompt.ThemeDefault("Choose secret:", prompt.StateError, err.Error())
+			if _, err := io.Copy(streams.ErrOut, strings.NewReader(msg)); err != nil {
+				return err
+			}
+			os.Exit(1)
+		}
 		if err != nil {
 			return fmt.Errorf("fetching secret: %v", err)
 		}
 	}
 
-	if len(secret.Data) == 0 {
-		msg := prompt.ThemeDefault("Choose key:", prompt.StateError, "secret has no data")
-		if _, err := io.Copy(streams.ErrOut, strings.NewReader(msg)); err != nil {
-			return err
+	if !opts.Raw {
+		switch secret.Type {
+		case SecretTypeHelm:
+			msg, err := FormatHelmSecret(secret)
+			if err != nil {
+				return err
+			}
+			if !strings.HasSuffix(msg, "\n") {
+				msg += "\n"
+			}
+			if _, err := io.Copy(streams.Out, strings.NewReader(msg)); err != nil {
+				return err
+			}
+			return nil
 		}
-		os.Exit(1)
-		return nil
+	}
+
+	if len(secret.Data) == 0 {
+		if k8sterm.IsTerminal(streams.Out) {
+			msg := prompt.ThemeDefault("Choose key:", prompt.StateError, "secret has no data")
+			if _, err := io.Copy(streams.ErrOut, strings.NewReader(msg)); err != nil {
+				return err
+			}
+			os.Exit(1)
+		}
+		return fmt.Errorf("secret %q has no data", secret.GetName())
 	}
 
 	if opts.SecretKey == "" {
@@ -292,8 +326,11 @@ func Run(
 	if !ok {
 		return fmt.Errorf("no such key in secret")
 	}
+	if !bytes.HasSuffix(value, []byte("\n")) && k8sterm.IsTerminal(streams.Out) {
+		value = append(value, byte('\n'))
+	}
 
-	if _, err := fmt.Fprintln(streams.Out, string(value)); err != nil {
+	if _, err := io.Copy(streams.Out, bytes.NewReader(value)); err != nil {
 		return err
 	}
 	return nil
