@@ -4,12 +4,15 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"io"
+	"sort"
+	"strings"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/cqroot/prompt"
 	"github.com/cqroot/prompt/choose"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"io"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -17,8 +20,6 @@ import (
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	k8scmd "k8s.io/kubectl/pkg/cmd/util"
 	utilcomp "k8s.io/kubectl/pkg/util/completion"
-	"sort"
-	"strings"
 )
 
 //go:embed usage.txt
