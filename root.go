@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strings"
 
@@ -253,7 +254,12 @@ func Run(
 	}
 
 	if len(secret.Data) == 0 {
-		return fmt.Errorf("secret %q has no data", secret.GetName())
+		msg := prompt.ThemeDefault("Choose key:", prompt.StateError, "secret has no data")
+		if _, err := io.Copy(streams.ErrOut, strings.NewReader(msg)); err != nil {
+			return err
+		}
+		os.Exit(1)
+		return nil
 	}
 
 	if opts.SecretKey == "" {
