@@ -6,8 +6,10 @@ import (
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/cqroot/prompt"
+	"github.com/cqroot/prompt/choose"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"io"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -230,7 +232,7 @@ func Run(
 
 		opts.SecretName, err = prompt.New().
 			Ask("Choose secret:").
-			Choose(secretNames, promptOpts...)
+			Choose(secretNames, choose.WithTeaProgramOpts(promptOpts...))
 		if err != nil {
 			return fmt.Errorf("picking secret: %w", err)
 		}
@@ -249,6 +251,10 @@ func Run(
 		}
 	}
 
+	if len(secret.Data) == 0 {
+		return fmt.Errorf("secret %q has no data", secret.GetName())
+	}
+
 	if opts.SecretKey == "" {
 		var keys []string
 		for k := range secret.Data {
@@ -257,26 +263,15 @@ func Run(
 		sort.Strings(keys)
 		if len(keys) == 1 {
 			opts.SecretKey = keys[0]
-
-			p := prompt.New().Ask("Choose key:")
-			var s strings.Builder
-			s.WriteString(p.FinishPrefixStyle.Render(p.FinishPrefix))
-			s.WriteString(" ")
-			s.WriteString(p.Message)
-			s.WriteString(" ")
-			s.WriteString(p.FinishSuffixStyle.Render(p.FinishSuffix))
-			s.WriteString(" ")
-			s.WriteString(opts.SecretKey)
-			s.WriteString("\n")
-
-			if _, err := fmt.Fprint(streams.ErrOut, s.String()); err != nil {
+			msg := prompt.ThemeDefault("Choose key:", prompt.StateFinish, opts.SecretKey)
+			if _, err := io.Copy(streams.Out, strings.NewReader(msg)); err != nil {
 				return err
 			}
 		} else {
 			var err error
 			opts.SecretKey, err = prompt.New().
 				Ask("Choose key:").
-				Choose(keys, promptOpts...)
+				Choose(keys, choose.WithTeaProgramOpts(promptOpts...))
 			if err != nil {
 				return fmt.Errorf("picking secret key: %w", err)
 			}
