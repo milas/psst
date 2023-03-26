@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
+	k8sterm "k8s.io/kubectl/pkg/util/term"
 	"os"
 	"sort"
 	"strings"
@@ -270,9 +271,11 @@ func Run(
 		sort.Strings(keys)
 		if len(keys) == 1 {
 			opts.SecretKey = keys[0]
-			msg := prompt.ThemeDefault("Choose key:", prompt.StateFinish, opts.SecretKey)
-			if _, err := io.Copy(streams.Out, strings.NewReader(msg)); err != nil {
-				return err
+			if k8sterm.IsTerminal(streams.Out) {
+				msg := prompt.ThemeDefault("Choose key:", prompt.StateFinish, opts.SecretKey)
+				if _, err := io.Copy(streams.Out, strings.NewReader(msg)); err != nil {
+					return err
+				}
 			}
 		} else {
 			var err error
