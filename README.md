@@ -87,7 +87,7 @@ psst --completion=powershell | Out-String | Invoke-Expression
 # Automatic Formatting
 ## TLS Certificates
 If the secret is for a TLS certificate, a summary will automatically be shown.
-```shell
+```plaintext
 $ psst podinfo-tls
 
 ping.readygo.run
