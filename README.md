@@ -3,6 +3,18 @@ Sometimes you need to take a little peek at your Kubernetes secrets...
 
 ![short demo GIF of an interactive psst run](demo.gif)
 
+---
+
+* [Usage](#usage)
+* [Installation](#installation)
+* [Shell Completions](#shell-completions)
+  * [Bash](#bash)
+  * [Zsh](#zsh)
+  * [fish](#fish)
+  * [PowerShell](#powershell)
+* [Automatic Formatting](#automatic-formatting) (Pretty Printing)
+  * [TLS Certificates](#tls-certificates)
+
 # Usage
 You can run `psst` without any arguments to interactively pick the secret and key whose value you want to see.
 
@@ -34,8 +46,8 @@ DEST="${HOME}/.local/bin/" docker buildx bake \
 ```
 > Be sure `~/.local/bin` is in your `PATH` or pick a different directory.
 
-## Shell Completions
-### Bash
+# Shell Completions
+## Bash
 ```shell
 source <(psst --completion=bash)
 ```
@@ -47,7 +59,7 @@ psst --completion=bash > /etc/bash_completion.d/psst
 
 > NOTE: For Homebrew installs of `bash`, use `$(brew --prefix)/etc/bash_completion.d/psst`
 
-### Zsh
+## Zsh
 ```shell
 source <(psst --completion=zsh); compdef _psst psst
 ```
@@ -57,7 +69,7 @@ To load completions for each session, execute once:
 psst --completion=zsh > "${fpath[1]}/_psst"
 ```
 
-### fish
+## fish
 ```shell
 psst --completion=fish | source
 ```
@@ -67,13 +79,13 @@ To load completions for each session, execute once:
 psst --completion=fish > ~/.config/fish/completions/psst.fish
 ```
 
-### PowerShell
+## PowerShell
 ```shell
 psst --completion=powershell | Out-String | Invoke-Expression
 ```
 
-## Pretty Printing
-### TLS Certificates
+# Automatic Formatting
+## TLS Certificates
 If the secret is for a TLS certificate, a summary will automatically be shown.
 ```shell
 $ psst podinfo-tls
