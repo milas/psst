@@ -271,6 +271,16 @@ func Run(
 		}
 	}
 
+	if !opts.Raw {
+		ok, err := MaybeFormatSecret(ctx, streams, secret)
+		if err != nil {
+			return err
+		}
+		if ok {
+			return nil
+		}
+	}
+
 	if len(secret.Data) == 0 {
 		if k8sterm.IsTerminal(streams.Out) {
 			msg := prompt.ThemeDefault("Choose key:", prompt.StateError, "secret has no data")
