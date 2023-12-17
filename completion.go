@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 
 	"github.com/spf13/cobra"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
 var supportedShells = []string{
@@ -14,7 +14,7 @@ var supportedShells = []string{
 	"powershell",
 }
 
-func printCompletionScript(cmd *cobra.Command, streams genericclioptions.IOStreams, shell string) error {
+func printCompletionScript(cmd *cobra.Command, streams genericiooptions.IOStreams, shell string) error {
 	switch shell {
 	case "bash":
 		return cmd.Root().GenBashCompletion(streams.Out)

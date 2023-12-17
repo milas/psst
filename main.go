@@ -4,20 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/cqroot/prompt"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	streams := genericclioptions.IOStreams{
+	streams := genericiooptions.IOStreams{
 		In:     os.Stdin,
 		Out:    os.Stdout,
 		ErrOut: os.Stderr,

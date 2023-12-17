@@ -6,12 +6,11 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
+	"k8s.io/cli-runtime/pkg/printers"
 	"os"
 	"sort"
 	"strings"
-
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
-	k8sterm "k8s.io/kubectl/pkg/util/term"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/cqroot/prompt"
@@ -19,6 +18,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
@@ -37,7 +37,7 @@ type Options struct {
 	Raw bool
 }
 
-func NewCommand(streams genericclioptions.IOStreams) (*cobra.Command, k8scmd.Factory) {
+func NewCommand(streams genericiooptions.IOStreams) (*cobra.Command, k8scmd.Factory) {
 	var kubeFactory k8scmd.Factory
 	var raw bool
 	var autocompleteShellLanguage string
@@ -199,7 +199,6 @@ func registerKubernetesAutocomplete(cmd *cobra.Command, kubeFactory k8scmd.Facto
 			func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 				return utilcomp.CompGetResource(
 					kubeFactory,
-					cmd,
 					"namespace",
 					toComplete,
 				), cobra.ShellCompDirectiveNoFileComp
@@ -220,7 +219,7 @@ type FormatFunc func(ctx context.Context, secret *corev1.Secret) (string, error)
 
 func Run(
 	ctx context.Context,
-	streams genericclioptions.IOStreams,
+	streams genericiooptions.IOStreams,
 	secretClient v1.SecretInterface,
 	opts Options,
 ) error {
@@ -259,7 +258,7 @@ func Run(
 	} else {
 		var err error
 		secret, err = secretClient.Get(ctx, opts.SecretName, metav1.GetOptions{})
-		if k8serr.IsNotFound(err) && k8sterm.IsTerminal(streams.Out) {
+		if k8serr.IsNotFound(err) && printers.IsTerminal(streams.Out) {
 			msg := prompt.ThemeDefault("Choose secret:", prompt.StateError, err.Error())
 			if _, err := io.Copy(streams.ErrOut, strings.NewReader(msg)); err != nil {
 				return err
@@ -282,7 +281,7 @@ func Run(
 	}
 
 	if len(secret.Data) == 0 {
-		if k8sterm.IsTerminal(streams.Out) {
+		if printers.IsTerminal(streams.Out) {
 			msg := prompt.ThemeDefault("Choose key:", prompt.StateError, "secret has no data")
 			if _, err := io.Copy(streams.ErrOut, strings.NewReader(msg)); err != nil {
 				return err
@@ -310,7 +309,7 @@ func Run(
 		sort.Strings(keys)
 		if len(keys) == 1 {
 			opts.SecretKey = keys[0]
-			if k8sterm.IsTerminal(streams.Out) {
+			if printers.IsTerminal(streams.Out) {
 				msg := prompt.ThemeDefault("Choose key:", prompt.StateFinish, opts.SecretKey)
 				if _, err := io.Copy(streams.Out, strings.NewReader(msg)); err != nil {
 					return err
@@ -331,7 +330,7 @@ func Run(
 	if !ok {
 		return fmt.Errorf("no such key in secret")
 	}
-	if !bytes.HasSuffix(value, []byte("\n")) && k8sterm.IsTerminal(streams.Out) {
+	if !bytes.HasSuffix(value, []byte("\n")) && printers.IsTerminal(streams.Out) {
 		value = append(value, byte('\n'))
 	}
 
@@ -365,7 +364,7 @@ func secretClient(kubeFactory k8scmd.Factory) (v1.SecretInterface, error) {
 }
 func MaybeFormatSecret(
 	ctx context.Context,
-	streams genericclioptions.IOStreams,
+	streams genericiooptions.IOStreams,
 	secret *corev1.Secret,
 ) (bool, error) {
 	var formatFunc FormatFunc
